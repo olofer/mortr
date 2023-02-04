@@ -65,6 +65,7 @@ pltfun <- function(T) {
   cols <- c(cols, "2021" = "magenta")
   cols <- c(cols, "2022" = "purple")
   cols <- c(cols, "<pre-2020>" = "black")
+  cols <- c(cols, "2023" = "grey")
   Tpre <- filter(T, year <= 2019)
   Tbase <- Tpre %>% group_by(time) %>% summarise(deaths = mean(deaths, na.rm = TRUE), num = n(), year = '<pre-2020>')
   Tlate <- filter(T, year >= 2020) %>% select(time, year, deaths)
