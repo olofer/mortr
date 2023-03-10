@@ -1,7 +1,7 @@
 # mortr
 Basic plotting of total mortality data
 
-## Usage
+## Usage (time series)
 ```
 Rscript --vanilla wmd-plot.R SWE FIN DNK NOR ISL GBR USA
 ```
@@ -10,3 +10,12 @@ The above command requires `R` with `tidyverse` installed. It automatically down
 ```
 Rscript --vanilla wmd-plot.R list
 ```
+
+## Usage (overall excess)
+To generate a basic plot of normalized excess mortality for all countries do
+```
+Rscript --vanilla wmd-plot.R excess
+```
+
+Present version of basic excess plot:
+![excess-summary](excess-summary.png) 

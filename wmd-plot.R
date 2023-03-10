@@ -1,6 +1,7 @@
 #
 # USAGE: Rscript --vanilla wmd-plot.R [parameters]
 #        Rscript --vanilla wmd-plot.R list
+#        Rscript --vanilla wmd-plot.R excess
 #        Rscript --vanilla wmd-plot.R SWE FIN DNK NOR ISL
 #        Rscript --vanilla wmd-plot.R all
 # 
@@ -12,6 +13,8 @@
 #   https://github.com/akarlinsky/world_mortality/blob/main/world_mortality.csv
 #   https://raw.githubusercontent.com/akarlinsky/world_mortality/main/world_mortality.csv
 #
+
+args <- commandArgs(TRUE)
 
 src_name_in_plot <- 'https://github.com/akarlinsky/world_mortality'
 data_url_raw <- 'https://raw.githubusercontent.com/akarlinsky/world_mortality/main/world_mortality.csv'
@@ -28,6 +31,39 @@ D <- read_csv(local_data_file)
 stopifnot(ncol(D) == 6)
 print(paste('data file:', local_data_file, 'has', nrow(D), 'rows'))
 print(unique(D[['time_unit']]))
+
+if (length(args) == 1 && args[1] == 'excess') {
+  Dpre <- D %>% filter(year <= 2019, time_unit == 'weekly') %>% group_by(iso3c, year) %>% summarise(totals = sum(deaths, na.rm = TRUE), num = n())
+  Dpre_rate <- Dpre %>% group_by(iso3c) %>% summarise(tot = sum(totals), ntot = sum(num)) %>% mutate(avgrate = tot / ntot)
+
+  # It might be useful to subdivide the "post" rates into 2020, 2021, and 2022 separately (and pooled)
+  # Additionally the 'monthly' rate ratio need to be assembled 
+
+  Dpost <- D %>% filter(year > 2019, time_unit == 'weekly') %>% group_by(iso3c, year) %>% summarise(totals = sum(deaths, na.rm = TRUE), num = n())
+  Dpost_rate <- Dpost %>% group_by(iso3c) %>% summarise(tot = sum(totals), ntot = sum(num)) %>% mutate(avgrate = tot / ntot)
+
+  Djoin <- inner_join(Dpre_rate, Dpost_rate, by = 'iso3c') %>% mutate(excess = avgrate.y / avgrate.x)
+  Dfinal <- select(Djoin, c(iso3c, excess)) %>% arrange(excess) %>% mutate(prct = 100.0 * (excess - 1.0))
+
+  print(colnames(Djoin))
+  print(Dfinal[['iso3c']])
+  print(Dfinal[['excess']])
+
+  gg <- ggplot(Dfinal) + 
+          geom_col(aes(y = iso3c, x = prct)) + 
+          scale_y_discrete(limits = Dfinal$iso3c) +
+          xlab('Excess %') +
+          ylab('Country code') +
+          ggtitle('Excess total mortality (countries with weekly numbers)', subtitle = 'excess = (rate 2020 and after) vs. (rate 2019 and before)')
+  
+  fname1 <- 'excess-summary.png'
+  png(fname1, width = 8.0, height = 16.0, res = 300.0, units = 'in')
+  #pdf(fname1, width = fig_width, height = fig_height)
+  print(gg)
+  dev.off()
+
+  q('no')
+}
 
 make_filename <- function(T, makePNG) {
   #ctry <- as.character(unique(T['country_name']))
@@ -98,7 +134,6 @@ countryFigure <- function(A, iso3c_str, makePNG) {
 }
 
 availCodes <- unique(D[['iso3c']])
-args <- commandArgs(TRUE)
 
 if (length(args) == 0) {
   CTYLIST <- c('SWE', 'NOR', 'DNK', 'FIN', 'ISL')
