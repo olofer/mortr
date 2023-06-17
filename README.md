@@ -21,8 +21,7 @@ The above commands generates plots of raw mortality data along a (normal) time-a
 Present examples:
 ![scandinavia-series-raw](raw-series-combined.png)
 ![scandinavia-series-hat](normalized-series-combined.png)
-
-TBD: normalization by week.
+![scandinavia-series-deseasoned](week-normalized-series-combined.png)
 
 ## Usage (overall excess)
 To generate a basic plot of normalized excess mortality for all countries do

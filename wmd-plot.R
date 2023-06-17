@@ -20,6 +20,7 @@ args <- commandArgs(TRUE)
 src_name_in_plot <- 'https://github.com/akarlinsky/world_mortality'
 data_url_raw <- 'https://raw.githubusercontent.com/akarlinsky/world_mortality/main/world_mortality.csv'
 local_data_file <- 'world-mortality.csv'
+fig_png_dpi <- 300.0  # Only used for PNG output, not PDF
 
 if (!file.exists(local_data_file)) {
   print(paste(local_data_file, 'not found; trying to download'))
@@ -58,7 +59,7 @@ if (length(args) == 1 && args[1] == 'excess') {
           ggtitle('Excess total mortality (countries with weekly numbers)', subtitle = 'excess = (rate 2020 and after) vs. (rate 2019 and before)')
   
   fname1 <- 'excess-summary.png'
-  png(fname1, width = 8.0, height = 16.0, res = 300.0, units = 'in')
+  png(fname1, width = 8.0, height = 16.0, res = fig_png_dpi, units = 'in')
   #pdf(fname1, width = fig_width, height = fig_height)
   print(gg)
   dev.off()
@@ -100,7 +101,7 @@ if (length(args) >= 1 && args[1] == 'series') {
                   subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
   
   fname1 <- 'raw-series-combined.png'
-  png(fname1, width = 12.0, height = 8.0, res = 300.0, units = 'in')
+  png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
   print(gg)
   dev.off()
 
@@ -114,12 +115,45 @@ if (length(args) >= 1 && args[1] == 'series') {
                   subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
   
   fname1 <- 'normalized-series-combined.png'
-  png(fname1, width = 12.0, height = 8.0, res = 300.0, units = 'in')
+  png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
   print(gg)
   dev.off()
 
-  # TODO: normalization per week instead; to pull out a better signal
-  # ..
+  # week-of-the-year average 2015-1019
+  Dser_pre_weekly <- filter(Dser, year <= 2019) %>% group_by(country, time) %>% summarise(base = mean(deaths))
+  print(Dser_pre_weekly)
+
+  gg <- ggplot(Dser_pre_weekly, aes(x = time, y = base, label = country, colour = country)) +
+          geom_line(size = 1.0) +
+          geom_point(size = 2.0) +
+          ylab('average weekly deaths') +
+          xlab('week') +
+          ggtitle('Pre-2020 average of weekly deaths', 
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
+  
+  fname1 <- 'pre-2020-weekly-average.png'
+  png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
+  print(gg)
+  dev.off()
+
+  # normalization per week instead; to pull out a better signal; "deseasonalized"
+  Dhat_seasonal <- inner_join(Dser, Dser_pre_weekly, by = c('country', 'time')) %>% mutate(rate = deaths / base)
+  print(Dhat_seasonal)
+
+  gg <- ggplot(Dhat_seasonal, aes(x = timestamp, y = rate, label = country, colour = country)) +
+          geom_line(size = 1.0) +
+          geom_point(size = 2.0) +
+          ylab('nondimensional weekly deaths') +
+          xlab('time') +
+          ggtitle('Weekly deaths normalized to pre-2020 per-week average', 
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
+  
+  fname1 <- 'week-normalized-series-combined.png'
+  png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
+  print(gg)
+  dev.off()
+
+  # TODO: cumulative version of the above plot..
 
   q('no')
 }
@@ -133,7 +167,6 @@ make_filename <- function(T, makePNG) {
 makePDF     <- TRUE   # PNGs are always generated, optionally also generate PDFs 
 fig_width   <- 10.0
 fig_height  <- 6.0
-fig_png_dpi <- 300.0  # Only used for PNG output, not PDF
 
 #
 # Useful documentation: 
