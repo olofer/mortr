@@ -153,8 +153,20 @@ if (length(args) >= 1 && args[1] == 'series') {
   print(gg)
   dev.off()
 
-  # TODO: same data as above but with loess curves instead ?!
-  # TODO: cumulative version of the above plot..
+  gg <- ggplot(Dhat_seasonal, aes(x = timestamp, y = rate, label = country, colour = country)) +
+          geom_smooth(method = 'loess', span = 0.050, se = TRUE, size = 2.0) +
+          geom_point(size = 2.0, alpha = 0.30) +
+          ylab('weekly deaths / seasonal mean') +
+          xlab('time') +
+          ggtitle('Weekly deaths normalized to pre-2020 seasonal average', 
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
+  
+  fname1 <- 'week-normalized-series-combined-loess.png'
+  png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
+  print(gg)
+  dev.off()
+
+  # TODO: some sort of cumulative version of the above plot..
 
   q('no')
 }
