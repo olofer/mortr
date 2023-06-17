@@ -143,9 +143,9 @@ if (length(args) >= 1 && args[1] == 'series') {
   gg <- ggplot(Dhat_seasonal, aes(x = timestamp, y = rate, label = country, colour = country)) +
           geom_line(size = 1.0) +
           geom_point(size = 2.0) +
-          ylab('nondimensional weekly deaths') +
+          ylab('weekly deaths / seasonal mean') +
           xlab('time') +
-          ggtitle('Weekly deaths normalized to pre-2020 per-week average', 
+          ggtitle('Weekly deaths normalized to pre-2020 seasonal average', 
                   subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
   
   fname1 <- 'week-normalized-series-combined.png'
@@ -153,6 +153,7 @@ if (length(args) >= 1 && args[1] == 'series') {
   print(gg)
   dev.off()
 
+  # TODO: same data as above but with loess curves instead ?!
   # TODO: cumulative version of the above plot..
 
   q('no')
