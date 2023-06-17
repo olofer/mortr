@@ -51,12 +51,15 @@ if (length(args) == 1 && args[1] == 'excess') {
   print(Dfinal[['iso3c']])
   print(Dfinal[['excess']])
 
+  ttlstr <- 'Excess total mortality (countries with weekly numbers)'
+  subttlstr <- paste('excess = (rate 2020 and after) vs. (rate 2019 and before)', '--- generated:', Sys.time())
+
   gg <- ggplot(Dfinal) + 
           geom_col(aes(y = iso3c, x = prct)) + 
           scale_y_discrete(limits = Dfinal$iso3c) +
           xlab('Excess %') +
-          ylab('Country code') +
-          ggtitle('Excess total mortality (countries with weekly numbers)', subtitle = 'excess = (rate 2020 and after) vs. (rate 2019 and before)')
+          ylab(paste('Country code', '(data source:', src_name_in_plot, ')')) +
+          ggtitle(ttlstr, subtitle = subttlstr)
   
   fname1 <- 'excess-summary.png'
   png(fname1, width = 8.0, height = 16.0, res = fig_png_dpi, units = 'in')
