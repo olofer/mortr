@@ -4,6 +4,7 @@
 #        Rscript --vanilla wmd-plot.R excess
 #        Rscript --vanilla wmd-plot.R SWE FIN DNK NOR ISL
 #        Rscript --vanilla wmd-plot.R all
+#        Rscript --vanilla wmd-plot.R series SWE NOR FIN DNK
 # 
 # OR:    source('wmd-plot.R') 
 # from within an interactive session (to stay in session).
@@ -61,6 +62,64 @@ if (length(args) == 1 && args[1] == 'excess') {
   #pdf(fname1, width = fig_width, height = fig_height)
   print(gg)
   dev.off()
+
+  q('no')
+}
+
+if (length(args) >= 1 && args[1] == 'series') {  
+  stopifnot(length(args) > 1)
+  suppressMessages(library(lubridate))
+
+  # Here args[2..end] should be country ISO codes
+  isos <- c()
+  for (a in 2:length(args)) {
+    isos <- c(isos, args[a])
+  }
+
+  print(isos)
+  print(now())
+
+  Dser <- D %>% filter(iso3c %in% isos, time_unit == 'weekly') %>% 
+                select(iso3c, year, time, deaths) %>% 
+                mutate(timestamp = make_date(year) + (time - 1) * weeks(1), country = iso3c)
+
+  # base rates
+  Dser_prerate <- filter(Dser, year <= 2019) %>% group_by(country) %>% summarise(base = mean(deaths))
+  print(Dser_prerate)
+
+  Dhat <- inner_join(Dser, Dser_prerate, by = 'country') %>% mutate(rate = deaths / base)
+  print(Dhat)
+
+  # raw counts
+  gg <- ggplot(Dser, aes(x = timestamp, y = deaths, label = country, colour = country)) +
+          geom_line(size = 1.0) +
+          geom_point(size = 2.0) +
+          ylab('weekly deaths (actual count)') +
+          xlab('time') +
+          ggtitle('Raw numbers for weekly deaths', 
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
+  
+  fname1 <- 'raw-series-combined.png'
+  png(fname1, width = 12.0, height = 8.0, res = 300.0, units = 'in')
+  print(gg)
+  dev.off()
+
+  # normalized to base rate
+  gg <- ggplot(Dhat, aes(x = timestamp, y = rate, label = country, colour = country)) +
+          geom_line(size = 1.0) +
+          geom_point(size = 2.0) +
+          ylab('weekly deaths (nondimensional)') +
+          xlab('time') +
+          ggtitle('Weekly deaths normalized to pre-2020 average', 
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
+  
+  fname1 <- 'normalized-series-combined.png'
+  png(fname1, width = 12.0, height = 8.0, res = 300.0, units = 'in')
+  print(gg)
+  dev.off()
+
+  # TODO: normalization per week instead; to pull out a better signal
+  # ..
 
   q('no')
 }

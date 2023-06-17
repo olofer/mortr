@@ -1,7 +1,7 @@
 # mortr
 Basic plotting of total mortality data
 
-## Usage (time series)
+## Usage (stacked time series)
 ```
 Rscript --vanilla wmd-plot.R SWE FIN DNK NOR ISL GBR USA
 ```
@@ -10,6 +10,17 @@ The above command requires `R` with `tidyverse` installed. It automatically down
 ```
 Rscript --vanilla wmd-plot.R list
 ```
+
+## Usage (extended time series)
+```
+Rscript --vanilla wmd-plot.R series SWE FIN DNK NOR 
+```
+
+The above commands generates plots of raw mortality data along a (normal) time-axis. Another plot with rates normalized to pre-$2020$ averages will also be produced.
+
+Present examples:
+![scandinavia-series-raw](raw-series-combined.png)
+![scandinavia-series-hat](normalized-series-combined.png)
 
 ## Usage (overall excess)
 To generate a basic plot of normalized excess mortality for all countries do
