@@ -154,7 +154,7 @@ if (length(args) >= 1 && args[1] == 'series') {
   dev.off()
 
   gg <- ggplot(Dhat_seasonal, aes(x = timestamp, y = rate, label = country, colour = country)) +
-          geom_smooth(method = 'loess', span = 0.050, se = TRUE, size = 2.0) +
+          geom_smooth(method = 'loess', span = 0.030, se = TRUE, size = 2.0, n = 500) +
           geom_point(size = 2.0, alpha = 0.30) +
           ylab('weekly deaths / seasonal mean') +
           xlab('time') +
