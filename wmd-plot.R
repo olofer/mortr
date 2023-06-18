@@ -5,6 +5,7 @@
 #        Rscript --vanilla wmd-plot.R SWE FIN DNK NOR ISL
 #        Rscript --vanilla wmd-plot.R all
 #        Rscript --vanilla wmd-plot.R series SWE NOR FIN DNK
+#        Rscript --vanilla wmd-plot.R cumulative SWE NOR FIN DNK
 # 
 # OR:    source('wmd-plot.R') 
 # from within an interactive session (to stay in session).
@@ -101,7 +102,8 @@ if (length(args) >= 1 && args[1] == 'series') {
           ylab('weekly deaths (actual count)') +
           xlab('time') +
           ggtitle('Raw numbers for weekly deaths', 
-                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time())) +
+          scale_x_date(date_breaks = '1 year', date_minor_breaks = '3 months')
   
   fname1 <- 'raw-series-combined.png'
   png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
@@ -115,7 +117,8 @@ if (length(args) >= 1 && args[1] == 'series') {
           ylab('weekly deaths (nondimensional)') +
           xlab('time') +
           ggtitle('Weekly deaths normalized to pre-2020 average', 
-                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time())) +
+          scale_x_date(date_breaks = '1 year', date_minor_breaks = '3 months')
   
   fname1 <- 'normalized-series-combined.png'
   png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
@@ -149,7 +152,8 @@ if (length(args) >= 1 && args[1] == 'series') {
           ylab('weekly deaths / seasonal mean') +
           xlab('time') +
           ggtitle('Weekly deaths normalized to pre-2020 seasonal average', 
-                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time())) +
+          scale_x_date(date_breaks = '1 year', date_minor_breaks = '3 months')
   
   fname1 <- 'week-normalized-series-combined.png'
   png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
@@ -162,14 +166,62 @@ if (length(args) >= 1 && args[1] == 'series') {
           ylab('weekly deaths / seasonal mean') +
           xlab('time') +
           ggtitle('Weekly deaths normalized to pre-2020 seasonal average', 
-                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time()))
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time())) +
+          scale_x_date(date_breaks = '1 year', date_minor_breaks = '3 months')
   
   fname1 <- 'week-normalized-series-combined-loess.png'
   png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
   print(gg)
   dev.off()
 
-  # TODO: some sort of cumulative version of the above plot..
+  q('no')
+}
+
+# Similar analysis to 'series' but in the integral sense; also do the seasonal adjustment always
+if (length(args) >= 1 && args[1] == 'cumulative') {  
+  stopifnot(length(args) > 1)
+  suppressMessages(library(lubridate))
+
+  isos <- c()
+  for (a in 2:length(args)) {
+    isos <- c(isos, args[a])
+  }
+
+  print(isos)
+  print(now())
+
+  Dser <- D %>% filter(iso3c %in% isos, time_unit == 'weekly') %>% 
+                select(iso3c, year, time, deaths) %>% 
+                mutate(timestamp = make_date(year) + (time - 1) * weeks(1), country = iso3c) %>%
+                arrange(country, timestamp)
+
+  Dser_pre_weekly <- filter(Dser, year <= 2019) %>% group_by(country, time) %>% summarise(base = mean(deaths))
+  Dser_seasonal <- inner_join(Dser, Dser_pre_weekly, by = c('country', 'time'))
+  Dser_cumulative <- Dser_seasonal %>% 
+                     group_by(country) %>% 
+                     mutate(cudeaths = cumsum(deaths), 
+                            cubase = cumsum(base),
+                            avgbase = mean(base), 
+                            cudelta = cudeaths - cubase, 
+                            cuhat = cudelta / avgbase) %>%
+                     ungroup() %>%
+                     select(!iso3c)
+
+  print(Dser_cumulative)
+
+  gg <- ggplot(Dser_cumulative, aes(x = timestamp, y = cuhat, label = country, colour = country)) +
+          geom_line(size = 1.0) +
+          geom_point(size = 2.0, alpha = 0.30) +
+          ylab('cumulative excess / avg. weekly rate') +
+          xlab('time') +
+          ggtitle('Normalized cumulative excess over pre-2020 seasonal pattern', 
+                  subtitle = paste('data source:', src_name_in_plot, '--- generated:', Sys.time())) +
+          scale_x_date(date_breaks = '1 year', date_minor_breaks = '3 months')
+  
+  fname1 <- 'cumulative-normalized-series-combined.png'
+  png(fname1, width = 12.0, height = 8.0, res = fig_png_dpi, units = 'in')
+  print(gg)
+  dev.off()
 
   q('no')
 }
